@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>반편성 프로그램 (신입생용)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    @media (max-width: 768px) {
+      .main-container { padding: 1rem !important; }
+      .main-title { font-size: 1.5rem !important; padding: 1.5rem 1rem !important; }
+      .subtitle { font-size: 0.75rem !important; }
+      .section-card { padding: 1rem !important; margin-bottom: 1rem !important; }
+      .section-title { font-size: 1rem !important; }
+      .button-small { padding: 0.5rem 0.8rem !important; font-size: 0.8rem !important; }
+      .button-medium { padding: 0.6rem 1rem !important; font-size: 0.85rem !important; }
+      .button-large { padding: 0.8rem 1.5rem !important; font-size: 0.9rem !important; }
+      .result-card-title { font-size: 1.3rem !important; }
+      .result-stats { font-size: 0.8rem !important; }
+      table { font-size: 0.75rem !important; }
+      th { font-size: 0.75rem !important; padding: 0.5rem 0.25rem !important; }
+      td { font-size: 0.75rem !important; padding: 0.4rem 0.2rem !important; }
+      .score-button { min-width: 28px !important; padding: 0.3rem 0.4rem !important; font-size: 0.8rem !important; }
+      .special-note-btn { min-width: 60px !important; max-width: 100px !important; padding: 0.4rem 0.6rem !important; font-size: 0.75rem !important; }
+      .upload-container { flex-direction: column !important; gap: 0.75rem !important; }
+      .mobile-template-btn-before { display: flex !important; }
+      .mobile-template-btn-after { display: flex !important; }
+      .desktop-template-btn { display: none !important; }
+    }
+
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .main-container { padding: 1.5rem !important; }
+      .main-title { font-size: 2rem !important; }
+      table { font-size: 0.85rem !important; }
+      th, td { font-size: 0.85rem !important; }
+    }
+
+    @media (max-width: 640px) {
+      .result-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+      .button-flex { flex-direction: column !important; gap: 0.75rem !important; }
+      .button-flex button { width: 100% !important; }
+    }
+
+    @media (min-width: 641px) and (max-width: 1024px) {
+      .result-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    }
+
+    @media (max-width: 768px) {
+      .modal-content { width: 90% !important; max-width: 90% !important; padding: 1.25rem !important; max-height: 85vh !important; overflow-y: auto !important; }
+      .modal-title { font-size: 1.2rem !important; }
+      .modal-button-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+    }
+
+    .text-nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    @media (hover: none) and (pointer: coarse) {
+      button, .clickable { min-height: 44px; min-width: 44px; }
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    @media (max-width: 768px) {
+      table { min-width: 100%; }
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      .privacy-banner { flex-direction: column !important; text-align: center !important; }
+      .privacy-banner-icon { margin: 0 auto !important; }
+      .privacy-footer { padding: 1rem !important; font-size: 0.8rem !important; }
+      .privacy-footer br { display: none; }
+    }
+
+    #root { width: 100%; height: 100%; }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const Upload = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+    );
+    const FileText = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
+      </svg>
+    );
+    const Settings = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" />
+      </svg>
+    );
+    const X = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    );
+    const Trash2 = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <line x1="10" y1="11" x2="10" y2="17" />
+        <line x1="14" y1="11" x2="14" y2="17" />
+      </svg>
+    );
+    const Users = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+    const Play = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3" />
+      </svg>
+    );
+    const Download = () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </svg>
+    );
+    const Check = () => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    );
+    const Save = () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+        <polyline points="17 21 17 13 7 13 7 21" />
+        <polyline points="7 3 7 8 15 8" />
+      </svg>
+    );
+    const Edit = () => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    );
+
+    function ClassAssignment() {
+      const [students, setStudents] = useState([]);
+      const [numClasses, setNumClasses] = useState(3);
+      const [studentSpecialNotes, setStudentSpecialNotes] = useState({});
+      const [separatePairs, setSeparatePairs] = useState([]);
+      const [newPair, setNewPair] = useState({ student1: '', student2: '' });
+      const [results, setResults] = useState(null);
+      const [showClassModal, setShowClassModal] = useState(false);
+      const [activeSpecialNoteDropdown, setActiveSpecialNoteDropdown] = useState(null);
+      const [isInputComplete, setIsInputComplete] = useState(false);
+      const [isEditMode, setIsEditMode] = useState(true);
+      const [selectedStudentsForSwap, setSelectedStudentsForSwap] = useState([]);
+      const [isResultSaved, setIsResultSaved] = useState(false);
+      const [isResultEditMode, setIsResultEditMode] = useState(false);
+      const [nameSortOrder, setNameSortOrder] = useState(null);
+      const [genderSortOrder, setGenderSortOrder] = useState(null);
+      const [password, setPassword] = useState('');
+      const [isPasswordSet, setIsPasswordSet] = useState(false);
+      const [inputPassword, setInputPassword] = useState('');
+      const [isUnlocked, setIsUnlocked] = useState(false);
+      const [passwordAttempts, setPasswordAttempts] = useState(0);
+
+      const specialNoteOptions = ['한부모', '군자녀', '유치원', '도움반', '쌍생아', '다문화'];
+
+      // 동명이인 + 이름만같음 탐지 (결과가 있으면 결과 기준, 없으면 원본 기준)
+      const findDuplicateNames = () => {
+        const sourceStudents = results 
+          ? results.flatMap(cls => cls.students) 
+          : students;
+
+        const duplicates = {};
+
+        // 1단계: 전체 이름 동일 (동명이인)
+        const fullNameMap = {};
+        sourceStudents.forEach(s => {
+          if (!fullNameMap[s.name]) fullNameMap[s.name] = [];
+          fullNameMap[s.name].push(s);
+        });
+        Object.entries(fullNameMap).forEach(([name, list]) => {
+          if (list.length > 1) {
+            list.forEach(s => {
+              const others = list.filter(o => o.id !== s.id);
+              const hasDifferentInfo = others.some(o => o.gender !== s.gender || o.birthDate !== s.birthDate);
+              duplicates[s.id] = hasDifferentInfo ? '동명이인' : '동명이인';
+            });
+          }
+        });
+
+        // 2단계: 성(첫 글자)은 다르고 이름(나머지)만 같음
+        const givenNameMap = {};
+        sourceStudents.forEach(s => {
+          if (s.name && s.name.length >= 2) {
+            const givenName = s.name.slice(1); // 성 제외
+            if (!givenNameMap[givenName]) givenNameMap[givenName] = [];
+            givenNameMap[givenName].push(s);
+          }
+        });
+        Object.entries(givenNameMap).forEach(([givenName, list]) => {
+          // 전체 이름이 다른(성이 다른) 학생끼리만
+          const uniqueFullNames = [...new Set(list.map(s => s.name))];
+          if (uniqueFullNames.length > 1) {
+            list.forEach(s => {
+              // 이미 동명이인/이름만 같음으로 마킹된 경우 덮어쓰지 않음
+              if (!duplicates[s.id]) {
+                duplicates[s.id] = '이름만같음';
+              }
+            });
+          }
+        });
+
+        return duplicates;
+      };
+
+      // 특이사항 드롭다운 열릴 때 배경 스크롤 잠금 (스크롤바 폭 보정으로 흔들림 방지)
+      React.useEffect(() => {
+        if (activeSpecialNoteDropdown !== null) {
+          const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+          document.documentElement.style.overflow = 'hidden';
+          document.body.style.overflow = 'hidden';
+          document.body.style.paddingRight = scrollbarWidth + 'px';
+        } else {
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        }
+        return () => {
+          document.documentElement.style.overflow = '';
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+        };
+      }, [activeSpecialNoteDropdown]);
+
+      // localStorage에서 데이터 로드
+      React.useEffect(() => {
+        try {
+          const savedPassword = localStorage.getItem('freshman_assignment_password');
+          if (savedPassword) {
+            setIsPasswordSet(true);
+            setPassword(savedPassword);
+            setIsUnlocked(false);
+          } else {
+            setIsPasswordSet(false);
+            setIsUnlocked(false);
+          }
+        } catch (error) {
+          console.error('데이터 로드 오류:', error);
+          setIsPasswordSet(false);
+          setIsUnlocked(false);
+        }
+      }, []);
+
+      const checkPassword = () => {
+        const trimmedInput = inputPassword.trim();
+        const trimmedPassword = password.trim();
+        if (trimmedInput === trimmedPassword) {
+          setIsUnlocked(true);
+          setPasswordAttempts(0);
+          try {
+            const savedData = localStorage.getItem('freshman_assignment_data');
+            if (savedData) {
+              const data = JSON.parse(savedData);
+              setStudents(data.students || []);
+              setNumClasses(data.numClasses || 3);
+              setStudentSpecialNotes(data.studentSpecialNotes || {});
+              setSeparatePairs(data.separatePairs || []);
+              setResults(data.results || null);
+              setIsInputComplete(data.isInputComplete || false);
+              setIsEditMode(data.isEditMode !== undefined ? data.isEditMode : true);
+            }
+          } catch (error) {
+            console.error('데이터 로드 오류:', error);
+          }
+        } else {
+          const newAttempts = passwordAttempts + 1;
+          setPasswordAttempts(newAttempts);
+          if (newAttempts >= 5) {
+            alert('비밀번호를 5회 틀렸습니다.\n보안을 위해 저장된 모든 데이터가 삭제됩니다.');
+            localStorage.clear();
+            window.location.reload();
+          } else {
+            alert(`비밀번호가 틀렸습니다. (${newAttempts}/5)`);
+            setInputPassword('');
+          }
+        }
+      };
+
+      const setNewPassword = (pwd) => {
+        const trimmedPwd = pwd.trim();
+        if (trimmedPwd.length === 4 && /^\d{4}$/.test(trimmedPwd)) {
+          setPassword(trimmedPwd);
+          setIsPasswordSet(true);
+          setIsUnlocked(true);
+          localStorage.setItem('freshman_assignment_password', trimmedPwd);
+          alert('비밀번호가 설정되었습니다.');
+        } else {
+          alert('4자리 숫자를 입력해주세요.');
+        }
+      };
+
+      // 자동 저장
+      React.useEffect(() => {
+        if (isUnlocked && isPasswordSet) {
+          const dataToSave = {
+            students, numClasses, studentSpecialNotes, separatePairs,
+            results, isInputComplete, isEditMode
+          };
+          localStorage.setItem('freshman_assignment_data', JSON.stringify(dataToSave));
+        }
+      }, [students, numClasses, studentSpecialNotes, separatePairs, results, isInputComplete, isEditMode, isUnlocked, isPasswordSet]);
+
+      const resetAll = () => {
+        if (confirm('모든 데이터와 비밀번호를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+          const confirmPassword = prompt('비밀번호를 입력하세요:');
+          if (confirmPassword === password) {
+            localStorage.clear();
+            window.location.reload();
+          } else {
+            alert('비밀번호가 틀렸습니다.');
+          }
+        }
+      };
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const workbook = XLSX.read(event.target.result, { type: 'binary', cellDates: false });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const data = XLSX.utils.sheet_to_json(sheet);
+
+          const formattedStudents = data.map((row, index) => {
+            let gender = row['성별'] || '';
+            if (gender === '남' || gender === 'M') gender = '남성';
+            else if (gender === '여' || gender === 'F') gender = '여성';
+
+            // 한글해득 점수 파싱
+            let hangulScore = 0;
+            const rawScore = row['한글해득'] || row['한글해득점수'] || row['한글해득 점수'] || '';
+            if (rawScore !== '' && rawScore !== null && rawScore !== undefined) {
+              hangulScore = parseInt(rawScore) || 0;
+            }
+
+            // 특이사항 파싱 (엑셀에서 읽어오기)
+            const rawNote = row['특이사항'] || '';
+
+            // 생년월일 파싱 (엑셀 날짜 직렬번호 → YYYY-MM-DD 변환)
+            let birthDate = '';
+            const rawBirth = row['생년월일'];
+            if (rawBirth !== undefined && rawBirth !== null && rawBirth !== '') {
+              if (typeof rawBirth === 'number') {
+                // 엑셀 날짜 직렬번호 변환 (1900-01-01 기준, 윤년 버그 보정)
+                const excelEpoch = new Date(1899, 11, 30);
+                const msPerDay = 86400000;
+                const d = new Date(excelEpoch.getTime() + rawBirth * msPerDay);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                birthDate = `${yyyy}-${mm}-${dd}`;
+              } else {
+                // 문자열인 경우 그대로 사용
+                birthDate = String(rawBirth).trim();
+              }
+            }
+
+            return {
+              id: index,
+              studentId: row['학생개인번호'] || '',
+              name: row['이름'] || row['name'] || '',
+              gender: gender,
+              birthDate: birthDate,
+              hangulScore: hangulScore,
+              specialNote: rawNote
+            };
+          });
+
+          // 특이사항 자동 매핑
+          const newNotes = {};
+          formattedStudents.forEach(s => {
+            if (s.specialNote) {
+              const notes = s.specialNote.split(',').map(n => n.trim()).filter(n => specialNoteOptions.includes(n));
+              if (notes.length > 0) {
+                newNotes[s.id] = notes;
+              }
+            }
+          });
+
+          setStudents(formattedStudents);
+          setStudentSpecialNotes(newNotes);
+          setResults(null);
+        };
+        reader.readAsBinaryString(file);
+      };
+
+      const clearStudentData = () => {
+        if (confirm('업로드한 학생 데이터를 삭제하시겠습니까?')) {
+          const fileInput = document.querySelector('input[type="file"]');
+          if (fileInput) fileInput.value = '';
+          setStudents([]);
+          setStudentSpecialNotes({});
+          setResults(null);
+          setIsInputComplete(false);
+          setIsEditMode(true);
+          setSelectedStudentsForSwap([]);
+          setIsResultSaved(false);
+          setIsResultEditMode(false);
+          setNameSortOrder(null);
+          setGenderSortOrder(null);
+        }
+      };
+
+      const downloadTemplate = () => {
+        const templateData = [
+          { '학생개인번호': '', '이름': '홍길동', '성별': '남성', '생년월일': '2017-03-15', '한글해득': '', '특이사항': '' },
+          { '학생개인번호': '', '이름': '김영희', '성별': '여성', '생년월일': '2017-05-20', '한글해득': '', '특이사항': '' },
+          { '학생개인번호': '', '이름': '이철수', '성별': '남성', '생년월일': '2017-08-10', '한글해득': '', '특이사항': '' },
+        ];
+        const worksheet = XLSX.utils.json_to_sheet(templateData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, '학생명렬표');
+        XLSX.writeFile(workbook, '학생명렬표_양식.xlsx');
+      };
+
+      const selectNumClasses = (num) => {
+        setNumClasses(num);
+        setShowClassModal(false);
+      };
+
+      const toggleSpecialNoteDropdown = (studentId) => {
+        if (!isEditMode) {
+          alert('입력 수정 버튼을 클릭하여 수정 모드로 전환해주세요.');
+          return;
+        }
+        if (activeSpecialNoteDropdown === studentId) {
+          setActiveSpecialNoteDropdown(null);
+        } else {
+          setActiveSpecialNoteDropdown(studentId);
+        }
+      };
+
+      const toggleSpecialNote = (studentId, note) => {
+        const newNotes = { ...studentSpecialNotes };
+        if (!newNotes[studentId]) newNotes[studentId] = [];
+        const currentNotes = [...newNotes[studentId]];
+        const index = currentNotes.indexOf(note);
+        if (index > -1) {
+          newNotes[studentId] = currentNotes.filter((_, i) => i !== index);
+        } else {
+          newNotes[studentId] = [...currentNotes, note];
+        }
+        setStudentSpecialNotes(newNotes);
+        // 드롭다운을 닫지 않아 복수 선택 가능
+      };
+
+      const toggleInputComplete = () => {
+        if (isEditMode) {
+          if (students.length === 0) {
+            alert('학생 명렬표를 먼저 업로드해주세요.');
+            return;
+          }
+          setIsInputComplete(true);
+          setIsEditMode(false);
+          alert('입력이 완료되었습니다!');
+        } else {
+          setIsEditMode(true);
+        }
+      };
+
+      const handleStudentClickForSwap = (student, className) => {
+        if (!isResultEditMode) return;
+        const studentWithClass = { ...student, className };
+        const existingIndex = selectedStudentsForSwap.findIndex(
+          s => s.id === student.id && s.className === className
+        );
+        if (existingIndex > -1) {
+          // 이미 선택된 학생 → 선택 해제
+          setSelectedStudentsForSwap(selectedStudentsForSwap.filter((_, i) => i !== existingIndex));
+        } else if (selectedStudentsForSwap.length === 0) {
+          // 첫 번째 학생 선택
+          setSelectedStudentsForSwap([studentWithClass]);
+        } else if (selectedStudentsForSwap.length === 1) {
+          // 두 번째 학생 선택 (같은 반이면 첫 번째 교체)
+          if (selectedStudentsForSwap[0].className === className && selectedStudentsForSwap[0].id === student.id) {
+            setSelectedStudentsForSwap([]);
+          } else {
+            setSelectedStudentsForSwap([selectedStudentsForSwap[0], studentWithClass]);
+          }
+        } else {
+          // 이미 2명 선택 → 새로 시작
+          setSelectedStudentsForSwap([studentWithClass]);
+        }
+      };
+
+      const swapStudents = (student1, student2) => {
+        if (student1.className === student2.className) {
+          alert('같은 반의 학생은 교체할 수 없습니다.');
+          setSelectedStudentsForSwap([]);
+          return;
+        }
+        const isMale = (s) => s.gender === '남성' || s.gender === '남' || s.gender === 'M';
+        const newResults = results.map(cls => {
+          if (cls.name === student1.className) {
+            return {
+              ...cls,
+              students: cls.students.map(s => s.id === student1.id ? student2 : s),
+              maleCount: cls.students.filter(s => {
+                if (s.id === student1.id) return isMale(student2);
+                return isMale(s);
+              }).length,
+              femaleCount: cls.students.filter(s => {
+                if (s.id === student1.id) return !isMale(student2);
+                return !isMale(s);
+              }).length
+            };
+          } else if (cls.name === student2.className) {
+            return {
+              ...cls,
+              students: cls.students.map(s => s.id === student2.id ? student1 : s),
+              maleCount: cls.students.filter(s => {
+                if (s.id === student2.id) return isMale(student1);
+                return isMale(s);
+              }).length,
+              femaleCount: cls.students.filter(s => {
+                if (s.id === student2.id) return !isMale(student1);
+                return !isMale(s);
+              }).length
+            };
+          }
+          return cls;
+        });
+        setResults(newResults);
+        setSelectedStudentsForSwap([]);
+      };
+
+      const moveStudentToClass = (student, targetClassName) => {
+        const sourceClassName = student.className;
+        if (sourceClassName === targetClassName) {
+          alert('이미 해당 반에 속해 있습니다.');
+          setSelectedStudentsForSwap([]);
+          return;
+        }
+        const isMaleStudent = student.gender === '남성' || student.gender === '남' || student.gender === 'M';
+        const newResults = results.map(cls => {
+          if (cls.name === sourceClassName) {
+            const newStudents = cls.students.filter(s => s.id !== student.id);
+            return {
+              ...cls, students: newStudents,
+              maleCount: isMaleStudent ? cls.maleCount - 1 : cls.maleCount,
+              femaleCount: !isMaleStudent ? cls.femaleCount - 1 : cls.femaleCount
+            };
+          } else if (cls.name === targetClassName) {
+            return {
+              ...cls, students: [...cls.students, student],
+              maleCount: isMaleStudent ? cls.maleCount + 1 : cls.maleCount,
+              femaleCount: !isMaleStudent ? cls.femaleCount + 1 : cls.femaleCount
+            };
+          }
+          return cls;
+        });
+        setResults(newResults);
+        setSelectedStudentsForSwap([]);
+      };
+
+      const toggleResultSave = () => {
+        if (!isResultSaved) {
+          setIsResultSaved(true);
+          setIsResultEditMode(false);
+          setSelectedStudentsForSwap([]);
+          alert('반편성 결과가 저장되었습니다!');
+        }
+      };
+
+      const toggleResultEdit = () => {
+        if (isResultSaved) {
+          setIsResultEditMode(true);
+          setIsResultSaved(false);
+          setSelectedStudentsForSwap([]);
+        }
+      };
+
+      const addSeparatePair = () => {
+        if (newPair.student1 && newPair.student2 && newPair.student1 !== newPair.student2) {
+          setSeparatePairs([...separatePairs, { ...newPair, id: Date.now() }]);
+          setNewPair({ student1: '', student2: '' });
+        }
+      };
+
+      const removePair = (pairId) => {
+        setSeparatePairs(separatePairs.filter(pair => pair.id !== pairId));
+      };
+
+      // ──────── 반편성 알고리즘 ────────
+      // 우선순위: 1) 남녀 성비 균등 → 2) 한글해득 점수 균등 → 3) 특이사항 균등
+      const assignClasses = () => {
+        if (students.length === 0) {
+          alert('먼저 학생 명렬표를 업로드해주세요.');
+          return;
+        }
+
+        const isMale = (s) => s.gender === '남성' || s.gender === '남' || s.gender === 'M';
+
+        // 반 초기화
+        const classes = Array.from({ length: numClasses }, (_, i) => ({
+          name: String.fromCharCode(65 + i),
+          students: [],
+          totalScore: 0,
+          maleCount: 0,
+          femaleCount: 0
+        }));
+
+        // 같은 반 금지 확인 함수
+        const canPlace = (student, cls) => {
+          const separateNames = separatePairs
+            .filter(p => p.student1 === student.name || p.student2 === student.name)
+            .map(p => p.student1 === student.name ? p.student2 : p.student1);
+          return !cls.students.some(s => separateNames.includes(s.name));
+        };
+
+        // 배치 함수 (점수 균등 고려하여 가장 점수합이 낮은 반에 배치)
+        const placeStudent = (student, targetClasses) => {
+          const sorted = [...targetClasses]
+            .filter(c => canPlace(student, c))
+            .sort((a, b) => a.totalScore - b.totalScore);
+          const target = sorted.length > 0 ? sorted[0] : targetClasses.sort((a, b) => a.students.length - b.students.length)[0];
+          target.students.push(student);
+          target.totalScore += (student.hangulScore || 0);
+          if (isMale(student)) target.maleCount++;
+          else target.femaleCount++;
+        };
+
+        // 전체 학생을 hangulScore 포함하여 준비
+        const allStudents = students.map(s => ({ ...s, hangulScore: s.hangulScore || 0 }));
+
+        // ── 1단계: 남녀 분리 후 점수순 정렬 (성비 + 점수 동시 확보) ──
+        const males = allStudents.filter(s => isMale(s)).sort((a, b) => b.hangulScore - a.hangulScore);
+        const females = allStudents.filter(s => !isMale(s)).sort((a, b) => b.hangulScore - a.hangulScore);
+
+        // 스네이크 드래프트: 성비를 완벽하게 맞추면서 점수도 균등 분배
+        const snakeDraft = (list, isMaleGroup) => {
+          let idx = 0;
+          let dir = 1;
+          list.forEach(student => {
+            let placed = false;
+            let attempts = 0;
+            while (!placed && attempts < numClasses) {
+              if (canPlace(student, classes[idx])) {
+                classes[idx].students.push(student);
+                classes[idx].totalScore += student.hangulScore;
+                if (isMaleGroup) classes[idx].maleCount++;
+                else classes[idx].femaleCount++;
+                placed = true;
+              } else {
+                idx += dir;
+                if (idx >= numClasses) { idx = numClasses - 1; dir = -1; }
+                else if (idx < 0) { idx = 0; dir = 1; }
+                attempts++;
+              }
+            }
+            if (!placed) {
+              // 금지 조건 불가 시 인원 적은 반에 배치
+              const fallback = [...classes].sort((a, b) => a.students.length - b.students.length)[0];
+              fallback.students.push(student);
+              fallback.totalScore += student.hangulScore;
+              if (isMaleGroup) fallback.maleCount++;
+              else fallback.femaleCount++;
+            }
+            // 다음 위치로 이동 (스네이크)
+            idx += dir;
+            if (idx >= numClasses) { idx = numClasses - 1; dir = -1; }
+            else if (idx < 0) { idx = 0; dir = 1; }
+          });
+        };
+
+        snakeDraft(males, true);
+        snakeDraft(females, false);
+
+        // ── 2단계: 학생 수 균등화 ──
+        let balancing = true;
+        let balanceRound = 0;
+        while (balancing && balanceRound < 20) {
+          balancing = false;
+          balanceRound++;
+          const sorted = [...classes].sort((a, b) => b.students.length - a.students.length);
+          const big = sorted[0];
+          const small = sorted[sorted.length - 1];
+          if (big.students.length - small.students.length > 1) {
+            // 같은 성별 학생을 찾아 이동 (성비 유지)
+            for (let i = big.students.length - 1; i >= 0; i--) {
+              const s = big.students[i];
+              if (canPlace(s, small)) {
+                big.students.splice(i, 1);
+                small.students.push(s);
+                big.totalScore -= s.hangulScore;
+                small.totalScore += s.hangulScore;
+                if (isMale(s)) { big.maleCount--; small.maleCount++; }
+                else { big.femaleCount--; small.femaleCount++; }
+                balancing = true;
+                break;
+              }
+            }
+          }
+        }
+
+        // ── 3단계: 특이사항 균등화 (성비와 점수를 크게 해치지 않는 범위에서 동일 성별 맞교환) ──
+        const noteCategories = ['한부모', '군자녀', '유치원', '도움반', '쌍생아', '다문화'];
+        
+        noteCategories.forEach(note => {
+          let improved = true;
+          let rounds = 0;
+          while (improved && rounds < 30) {
+            improved = false;
+            rounds++;
+            
+            // 각 반별 해당 특이사항 학생 수
+            const counts = classes.map((c, i) => ({
+              idx: i,
+              count: c.students.filter(s => studentSpecialNotes[s.id]?.includes(note)).length
+            }));
+            const maxC = counts.reduce((a, b) => a.count > b.count ? a : b);
+            const minC = counts.reduce((a, b) => a.count < b.count ? a : b);
+            
+            if (maxC.count - minC.count < 2) continue; // 이미 균등
+            
+            const fromCls = classes[maxC.idx];
+            const toCls = classes[minC.idx];
+            
+            // fromCls에서 해당 특이사항 학생을 찾아 toCls의 비특이사항 학생과 같은 성별 교환
+            const candidates = fromCls.students.filter(s => studentSpecialNotes[s.id]?.includes(note));
+            
+            for (const cand of candidates) {
+              const candIsMale = isMale(cand);
+              // toCls에서 같은 성별이면서 해당 특이사항이 없는 학생 찾기
+              const swapTarget = toCls.students.find(s => 
+                isMale(s) === candIsMale && 
+                !studentSpecialNotes[s.id]?.includes(note) &&
+                canPlace(cand, { students: toCls.students.filter(st => st.id !== s.id) }) &&
+                canPlace(s, { students: fromCls.students.filter(st => st.id !== cand.id) })
+              );
+              
+              if (swapTarget) {
+                // 점수 차이가 너무 크면 스킵 (점수 균형 보호)
+                const scoreDiff = Math.abs(cand.hangulScore - swapTarget.hangulScore);
+                const currentDiff = Math.abs(fromCls.totalScore - toCls.totalScore);
+                const newFromScore = fromCls.totalScore - cand.hangulScore + swapTarget.hangulScore;
+                const newToScore = toCls.totalScore - swapTarget.hangulScore + cand.hangulScore;
+                const newDiff = Math.abs(newFromScore - newToScore);
+                
+                // 점수 균형이 크게 나빠지지 않으면 교환 허용
+                if (newDiff <= currentDiff + 5) {
+                  const candIdx = fromCls.students.findIndex(s => s.id === cand.id);
+                  const targetIdx = toCls.students.findIndex(s => s.id === swapTarget.id);
+                  fromCls.students[candIdx] = swapTarget;
+                  toCls.students[targetIdx] = cand;
+                  fromCls.totalScore = newFromScore;
+                  toCls.totalScore = newToScore;
+                  improved = true;
+                  break;
+                }
+              }
+            }
+          }
+        });
+
+        setResults(classes);
+        setIsResultSaved(false);
+        setIsResultEditMode(true);
+        setSelectedStudentsForSwap([]);
+        setNameSortOrder(null);
+        setGenderSortOrder(null);
+      };
+
+      // 정렬 함수들
+      const toggleNameSort = () => {
+        if (!results) return;
+        const newSortOrder = nameSortOrder === 'asc' ? 'desc' : 'asc';
+        setNameSortOrder(newSortOrder);
+        setGenderSortOrder(null);
+        const sortedResults = results.map(cls => ({
+          ...cls,
+          students: [...cls.students].sort((a, b) => 
+            newSortOrder === 'asc' ? a.name.localeCompare(b.name, 'ko') : b.name.localeCompare(a.name, 'ko')
+          )
+        }));
+        setResults(sortedResults);
+      };
+
+      const toggleGenderSort = () => {
+        if (!results) return;
+        const newSortOrder = genderSortOrder === 'male-first' ? 'female-first' : 'male-first';
+        setGenderSortOrder(newSortOrder);
+        setNameSortOrder(null);
+        const isMale = (s) => s.gender === '남성' || s.gender === '남' || s.gender === 'M';
+        const sortedResults = results.map(cls => ({
+          ...cls,
+          students: [...cls.students].sort((a, b) => {
+            const aM = isMale(a), bM = isMale(b);
+            if (newSortOrder === 'male-first') {
+              if (aM && !bM) return -1;
+              if (!aM && bM) return 1;
+            } else {
+              if (!aM && bM) return -1;
+              if (aM && !bM) return 1;
+            }
+            return a.name.localeCompare(b.name, 'ko');
+          })
+        }));
+        setResults(sortedResults);
+      };
+
+      const downloadExcel = () => {
+        if (!results) { alert('먼저 반편성을 실행해주세요.'); return; }
+
+        const originalData = [];
+        results.forEach(cls => {
+          cls.students.forEach(student => {
+            originalData.push({
+              '학생개인번호': student.studentId || '',
+              '이름': student.name,
+              '성별': student.gender,
+              '생년월일': student.birthDate || '',
+              '한글해득': student.hangulScore || 0,
+              '특이사항': studentSpecialNotes[student.id]?.length > 0 ? [...studentSpecialNotes[student.id]].sort((a, b) => specialNoteOptions.indexOf(a) - specialNoteOptions.indexOf(b)).join(', ') : (student.specialNote || ''),
+              '배정반': cls.name + '반'
+            });
+          });
+        });
+
+        const originalSheet = XLSX.utils.json_to_sheet(originalData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, originalSheet, '원본');
+
+        results.forEach(cls => {
+          const classData = cls.students.map(student => ({
+            '학생개인번호': student.studentId || '',
+            '이름': student.name,
+            '성별': student.gender,
+            '생년월일': student.birthDate || '',
+            '한글해득': student.hangulScore || 0,
+            '특이사항': studentSpecialNotes[student.id]?.length > 0 ? [...studentSpecialNotes[student.id]].sort((a, b) => specialNoteOptions.indexOf(a) - specialNoteOptions.indexOf(b)).join(', ') : (student.specialNote || '')
+          }));
+          const classSheet = XLSX.utils.json_to_sheet(classData);
+          XLSX.utils.book_append_sheet(workbook, classSheet, cls.name + '반');
+        });
+
+        const fileName = `신입생_반편성_결과_${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+      };
+
+      const duplicateNames = findDuplicateNames();
+
+      return (
+        <div 
+          className="main-container"
+          style={{
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            padding: '2rem',
+            fontFamily: "'Noto Sans KR', -apple-system, sans-serif"
+          }}
+          onClick={() => {
+            setActiveSpecialNoteDropdown(null);
+          }}
+        >
+          {/* 비밀번호 모달 */}
+          {!isUnlocked && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0, 0, 0, 0.7)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+            }}>
+              <div style={{
+                background: 'white', borderRadius: '16px', padding: '2.5rem',
+                maxWidth: '400px', width: '90%', boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
+              }}>
+                <h2 style={{ margin: '0 0 1.5rem 0', color: '#333', fontSize: '1.5rem', textAlign: 'center' }}>
+                  {isPasswordSet ? '🔒 비밀번호 입력' : '🔐 비밀번호 설정'}
+                </h2>
+                <p style={{ color: '#666', fontSize: '0.9rem', textAlign: 'center', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                  {isPasswordSet 
+                    ? '저장된 데이터를 불러오려면 비밀번호를 입력하세요.' 
+                    : <>데이터 보호를 위해<br/>4자리 숫자 비밀번호를 설정하세요.</>}
+                </p>
+                <input
+                  type="password" maxLength="4"
+                  value={isPasswordSet ? inputPassword : password}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (isPasswordSet) setInputPassword(value);
+                    else setPassword(value);
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      if (isPasswordSet) checkPassword();
+                      else if (password.length === 4) setNewPassword(password);
+                    }
+                  }}
+                  placeholder="4자리 숫자"
+                  style={{
+                    width: '100%', padding: '1rem', fontSize: '1.5rem', textAlign: 'center',
+                    border: '2px solid #ddd', borderRadius: '8px', marginBottom: '1rem', letterSpacing: '0.5rem'
+                  }}
+                />
+                <button
+                  onClick={() => { if (isPasswordSet) checkPassword(); else setNewPassword(password); }}
+                  style={{
+                    width: '100%', padding: '1rem',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white', border: 'none', borderRadius: '8px',
+                    fontSize: '1rem', fontWeight: '600', cursor: 'pointer'
+                  }}
+                >
+                  {isPasswordSet ? '확인' : '설정'}
+                </button>
+                {isPasswordSet && (
+                  <div style={{ width: '100%', padding: '0.75rem', background: 'transparent', color: '#ff6b6b', border: 'none', fontSize: '0.85rem', marginTop: '0.5rem', textAlign: 'center', fontWeight: '600', lineHeight: '1.6' }}>
+                    ⚠️ 비밀번호 5회 틀리면<br/>저장된 데이터가 초기화됩니다.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 메인 컨테이너 */}
+          <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.98)', borderRadius: '24px',
+              boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)', overflow: 'hidden',
+              opacity: isUnlocked ? 1 : 0.3, pointerEvents: isUnlocked ? 'auto' : 'none'
+            }} onClick={(e) => e.stopPropagation()}>
+              
+              {/* 헤더 */}
+              <div style={{
+                background: 'linear-gradient(135deg, #5f72e4 0%, #6d5ca6 100%)',
+                padding: '3rem 2rem', position: 'relative', overflow: 'hidden', textAlign: 'center'
+              }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'radial-gradient(circle at 30% 50%, rgba(255,255,255,0.1) 0%, transparent 50%)',
+                  pointerEvents: 'none'
+                }}></div>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'white', margin: 0, letterSpacing: '-0.5px', position: 'relative' }}>
+                  반편성 프로그램 (신입생용)
+                </h1>
+                <p className="subtitle" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1rem', marginTop: '0.5rem', position: 'relative' }}>
+                  한글해득 점수와 학생 특성을 고려한 균형잡힌 반편성
+                </p>
+                {isUnlocked && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1.5rem', position: 'relative' }}>
+                    <button onClick={resetAll} style={{
+                      padding: '0.6rem 1.2rem', background: 'white', color: '#667eea',
+                      border: '2px solid #e0e0e0', borderRadius: '8px', cursor: 'pointer',
+                      fontWeight: '600', fontSize: '0.85rem', display: 'flex', alignItems: 'center',
+                      gap: '0.4rem', transition: 'all 0.2s', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)'
+                    }}
+                    onMouseEnter={(e) => { e.target.style.background = '#f8f9fa'; e.target.style.transform = 'scale(1.05)'; }}
+                    onMouseLeave={(e) => { e.target.style.background = 'white'; e.target.style.transform = 'scale(1)'; }}
+                    >🔄 초기화</button>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '2rem' }}>
+                {/* 설정 섹션 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                  
+                  {/* 파일 업로드 카드 */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    borderRadius: '16px', padding: '2rem', color: 'white',
+                    boxShadow: '0 10px 30px rgba(240, 147, 251, 0.3)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                      <Upload />
+                      <h3 style={{ margin: '0 0 0 0.5rem', fontSize: '1.2rem', fontWeight: '700' }}>학생 명렬표 업로드</h3>
+                    </div>
+                    <div className="upload-container" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+                      <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload}
+                        style={{ flex: 1, padding: '0.75rem', background: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#333', fontWeight: '500' }} />
+                      <button onClick={downloadTemplate} className="desktop-template-btn"
+                        style={{
+                          padding: '0.75rem 1.25rem', background: 'white', color: '#f5576c', border: 'none',
+                          borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem',
+                          whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                          display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }}>
+                        <Download />양식 다운로드
+                      </button>
+                    </div>
+
+                    {students.length === 0 && (
+                      <button onClick={downloadTemplate} className="mobile-template-btn-before"
+                        style={{
+                          width: '100%', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.3)',
+                          color: 'white', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '8px',
+                          cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem', display: 'none',
+                          alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                        }}>
+                        <Download />양식 다운로드
+                      </button>
+                    )}
+
+                    {students.length > 0 && (
+                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <p style={{ fontSize: '0.9rem', opacity: 0.95, margin: 0, flex: 1, minWidth: 0 }}>
+                          ✓ {students.length}명의 학생 로드됨
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                          <button onClick={clearStudentData}
+                            style={{
+                              padding: '0.5rem 0.75rem',
+                              background: 'linear-gradient(135deg, #FFB6C1 0%, #FFB3D9 100%)',
+                              color: '#8B4789', border: 'none', borderRadius: '6px', cursor: 'pointer',
+                              fontWeight: '600', fontSize: '0.75rem', whiteSpace: 'nowrap',
+                              display: 'flex', alignItems: 'center', gap: '0.3rem'
+                            }}>🗑️ 삭제</button>
+                          <button onClick={downloadTemplate} className="mobile-template-btn-after"
+                            style={{
+                              padding: '0.5rem 0.75rem', background: 'rgba(255, 255, 255, 0.3)',
+                              color: 'white', border: '1px solid rgba(255, 255, 255, 0.5)',
+                              borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.75rem',
+                              whiteSpace: 'nowrap', display: 'none', alignItems: 'center', gap: '0.3rem'
+                            }}>
+                            <Download style={{ width: '14px', height: '14px' }} />양식
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 학급 수 설정 카드 */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    borderRadius: '16px', padding: '2rem', color: 'white',
+                    boxShadow: '0 10px 30px rgba(79, 172, 254, 0.3)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                      <Settings />
+                      <h3 style={{ margin: '0 0 0 0.5rem', fontSize: '1.2rem', fontWeight: '700' }}>학급 수 설정</h3>
+                    </div>
+                    <button onClick={() => setShowClassModal(true)}
+                      style={{
+                        width: '100%', padding: '0.75rem', background: 'white', border: 'none',
+                        borderRadius: '8px', fontSize: '1rem', fontWeight: '600', color: '#333',
+                        cursor: 'pointer', textAlign: 'left', display: 'flex',
+                        justifyContent: 'space-between', alignItems: 'center'
+                      }}>
+                      <span>{numClasses}개 학급</span>
+                      <span style={{ fontSize: '1.2rem' }}>▼</span>
+                    </button>
+                    <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.95 }}>
+                      학급당 약 {students.length > 0 ? Math.ceil(students.length / numClasses) : 0}명
+                    </p>
+                  </div>
+                </div>
+
+                {/* 학생 목록 및 한글해득 점수 */}
+                {students.length > 0 && (
+                  <div style={{
+                    background: 'white', borderRadius: '16px', padding: '2rem',
+                    marginBottom: '2rem', border: '2px solid #e0e0e0'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1.3rem', fontWeight: '700', marginBottom: '1.5rem',
+                      color: '#333', display: 'flex', alignItems: 'center'
+                    }}>
+                      <Users />
+                      <span style={{ marginLeft: '0.5rem' }}>학생 목록 및 특성 점수</span>
+                    </h3>
+
+                    <div style={{ overflowX: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px', WebkitOverflowScrolling: 'touch' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr style={{ background: '#f5f5f5' }}>
+                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'left', fontWeight: '600', fontSize: '0.9rem', position: 'sticky', top: 0, background: '#f5f5f5', zIndex: 10 }}>이름</th>
+                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: '600', fontSize: '0.9rem', position: 'sticky', top: 0, background: '#f5f5f5', zIndex: 10 }}>성별</th>
+                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: '600', fontSize: '0.9rem', position: 'sticky', top: 0, background: '#f5f5f5', zIndex: 10, whiteSpace: 'nowrap' }}>한글해득 점수</th>
+                            <th style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: '600', fontSize: '0.9rem', position: 'sticky', top: 0, background: '#f5f5f5', zIndex: 10, whiteSpace: 'nowrap' }}>특이사항</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {students.map((student, idx) => (
+                            <tr key={student.id} style={{ borderBottom: '1px solid #e0e0e0', background: idx % 2 === 0 ? 'white' : '#fafafa' }}>
+                              <td style={{ padding: '0.75rem 0.5rem', fontWeight: '500', fontSize: '0.9rem' }}>
+                                {student.name}
+                                {duplicateNames[student.id] && duplicateNames[student.id] !== '이름만같음' && (
+                                  <span style={{ marginLeft: '0.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                    <span style={{
+                                      fontSize: '0.7rem', padding: '0.1rem 0.4rem',
+                                      background: duplicateNames[student.id] === '동명이인' ? '#ff6b6b' : '#ffa726',
+                                      color: 'white', borderRadius: '4px', fontWeight: '600'
+                                    }}>
+                                      {duplicateNames[student.id]}
+                                    </span>
+                                    {duplicateNames[student.id] === '동명이인' && student.birthDate && (
+                                      <span style={{
+                                        fontSize: '0.58rem', padding: '0.1rem 0.3rem',
+                                        background: '#fff0f0', color: '#c0392b',
+                                        borderRadius: '4px', fontWeight: '600', border: '1px solid #ffb3b3'
+                                      }}>{student.birthDate}</span>
+                                    )}
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center' }}>
+                                <span style={{
+                                  padding: '0.2rem 0.5rem', borderRadius: '8px',
+                                  background: student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '#e3f2fd' : '#fce4ec',
+                                  color: student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '#1976d2' : '#c2185b',
+                                  fontWeight: '600', fontSize: '0.8rem'
+                                }}>
+                                  {student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '남성' : '여성'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: '600', fontSize: '0.9rem' }}>
+                                <span style={{
+                                  display: 'inline-block', minWidth: '36px', padding: '0.3rem 0.6rem',
+                                  background: student.hangulScore > 0 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f0f0f0',
+                                  color: student.hangulScore > 0 ? 'white' : '#999',
+                                  borderRadius: '8px', fontWeight: '700'
+                                }}>
+                                  {student.hangulScore || 0}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.5rem 0.25rem', textAlign: 'center', position: 'relative' }}>
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isEditMode) toggleSpecialNoteDropdown(student.id);
+                                    else alert('입력 수정 버튼을 클릭하여 수정 모드로 전환해주세요.');
+                                  }}
+                                  id={`special-note-btn-${student.id}`}
+                                  style={{
+                                    display: 'inline-block', minWidth: '80px', maxWidth: '200px',
+                                    padding: '0.6rem 0.9rem', fontSize: '0.9rem', fontWeight: '600',
+                                    color: studentSpecialNotes[student.id]?.length > 0 ? 'white' : '#666',
+                                    border: '2px solid #e67e22', borderRadius: '8px',
+                                    background: studentSpecialNotes[student.id]?.length > 0 
+                                      ? 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)' : 'white',
+                                    cursor: isEditMode ? 'pointer' : 'not-allowed', transition: 'all 0.2s',
+                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                                  }}
+                                >
+                                  {studentSpecialNotes[student.id]?.length > 0 
+                                    ? [...studentSpecialNotes[student.id]].sort((a, b) => specialNoteOptions.indexOf(a) - specialNoteOptions.indexOf(b)).join(', ') : '선택'}
+                                </div>
+
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 같은 반 금지 학생 */}
+                {students.length > 0 && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    borderRadius: '16px', padding: '2rem', marginBottom: '2rem',
+                    boxShadow: '0 10px 30px rgba(255, 154, 158, 0.3)'
+                  }}>
+                    <h3 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '1.5rem', color: '#c2185b' }}>
+                      같은 반 금지 학생 설정
+                    </h3>
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                      <select value={newPair.student1} onChange={(e) => setNewPair({ ...newPair, student1: e.target.value })}
+                        style={{ flex: 1, minWidth: '200px', padding: '0.75rem', border: '2px solid rgba(194, 24, 91, 0.2)', borderRadius: '12px', fontSize: '1rem', background: 'white' }}>
+                        <option value="">학생 선택</option>
+                        {students.map(s => (<option key={s.id} value={s.name}>{s.name}</option>))}
+                      </select>
+                      <select value={newPair.student2} onChange={(e) => setNewPair({ ...newPair, student2: e.target.value })}
+                        style={{ flex: 1, minWidth: '200px', padding: '0.75rem', border: '2px solid rgba(194, 24, 91, 0.2)', borderRadius: '12px', fontSize: '1rem', background: 'white' }}>
+                        <option value="">학생 선택</option>
+                        {students.map(s => (<option key={s.id} value={s.name}>{s.name}</option>))}
+                      </select>
+                      <button onClick={addSeparatePair}
+                        style={{ padding: '0.75rem 2rem', background: '#c2185b', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        추가
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                      {separatePairs.map(pair => (
+                        <div key={pair.id} style={{
+                          background: 'white', padding: '0.5rem 1rem', borderRadius: '20px',
+                          display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', fontWeight: '500', color: '#c2185b'
+                        }}>
+                          {pair.student1} ↔ {pair.student2}
+                          <button onClick={() => removePair(pair.id)}
+                            style={{ background: 'none', border: 'none', color: '#f5576c', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center' }}>
+                            <Trash2 />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 입력완료 & 반편성 실행 버튼 */}
+                {students.length > 0 && (
+                  <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                    <button onClick={toggleInputComplete}
+                      style={{
+                        padding: '1.25rem 3rem',
+                        background: isEditMode 
+                          ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)'
+                          : 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                        color: 'white', border: 'none', borderRadius: '16px', fontSize: '1.2rem',
+                        fontWeight: '700', cursor: 'pointer',
+                        boxShadow: isEditMode ? '0 10px 30px rgba(17, 153, 142, 0.4)' : '0 10px 30px rgba(240, 147, 251, 0.4)',
+                        transition: 'transform 0.2s', display: 'inline-flex', alignItems: 'center',
+                        gap: '0.5rem', minWidth: '200px', justifyContent: 'center'
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    >
+                      <Check />{isEditMode ? '입력 완료' : '입력 수정'}
+                    </button>
+                    <button onClick={assignClasses} disabled={!isInputComplete}
+                      style={{
+                        padding: '1.25rem 3rem',
+                        background: isInputComplete ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#ccc',
+                        color: 'white', border: 'none', borderRadius: '16px', fontSize: '1.2rem',
+                        fontWeight: '700', cursor: isInputComplete ? 'pointer' : 'not-allowed',
+                        boxShadow: isInputComplete ? '0 10px 30px rgba(102, 126, 234, 0.4)' : 'none',
+                        transition: 'transform 0.2s', display: 'inline-flex', alignItems: 'center',
+                        gap: '0.5rem', minWidth: '200px', justifyContent: 'center',
+                        opacity: isInputComplete ? 1 : 0.6
+                      }}
+                      onMouseEnter={(e) => { if (isInputComplete) e.target.style.transform = 'scale(1.05)'; }}
+                      onMouseLeave={(e) => { e.target.style.transform = 'scale(1)'; }}
+                    >
+                      <Play />반편성 실행하기
+                    </button>
+                  </div>
+                )}
+
+                {/* 결과 표시 */}
+                {results && (
+                  <div>
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem'
+                    }}>
+                      <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#333', margin: 0 }}>반편성 결과</h3>
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button onClick={toggleNameSort}
+                          style={{
+                            padding: '0.75rem 1.25rem',
+                            background: nameSortOrder ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                            color: nameSortOrder ? 'white' : '#667eea',
+                            border: nameSortOrder ? 'none' : '2px solid #667eea',
+                            borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            boxShadow: nameSortOrder ? '0 4px 12px rgba(102, 126, 234, 0.3)' : 'none'
+                          }}>
+                          {nameSortOrder === 'asc' ? '🔼' : nameSortOrder === 'desc' ? '🔽' : '🔤'} 가나다분류
+                        </button>
+                        <button onClick={toggleGenderSort}
+                          style={{
+                            padding: '0.75rem 1.25rem',
+                            background: genderSortOrder ? 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' : 'white',
+                            color: genderSortOrder ? 'white' : '#f5576c',
+                            border: genderSortOrder ? 'none' : '2px solid #f5576c',
+                            borderRadius: '12px', fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            boxShadow: genderSortOrder ? '0 4px 12px rgba(245, 87, 108, 0.3)' : 'none'
+                          }}>
+                          {genderSortOrder === 'male-first' ? '👦👧' : genderSortOrder === 'female-first' ? '👧👦' : '⚥'} 성별분류
+                        </button>
+                        <button onClick={downloadExcel} title="엑셀 파일은 귀하의 기기에만 저장됩니다"
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                            color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600',
+                            cursor: 'pointer', fontSize: '0.95rem', display: 'flex',
+                            alignItems: 'center', gap: '0.5rem',
+                            boxShadow: '0 4px 12px rgba(17, 153, 142, 0.3)'
+                          }}
+                          onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                          onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                        >
+                          <Download />엑셀 다운로드
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                      {results.map((cls, idx) => (
+                        <div key={cls.name} style={{
+                          background: `linear-gradient(135deg, ${['#a8edea', '#fbc2eb', '#fed6e3', '#a6c1ee', '#ffecd2'][idx % 5]} 0%, ${['#fed6e3', '#a6c1ee', '#ffecd2', '#a8edea', '#fbc2eb'][idx % 5]} 100%)`,
+                          borderRadius: '16px', padding: '1.5rem', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)'
+                        }}>
+                          <h4 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#333' }}>
+                            {cls.name}반
+                          </h4>
+
+                          {/* 통계 영역 */}
+                          <div style={{
+                            background: 'rgba(255, 255, 255, 0.7)', padding: '0.75rem',
+                            borderRadius: '12px', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600'
+                          }}>
+                            <div>총 {cls.students.length}명</div>
+                            <div>남성 {cls.maleCount}명 / 여성 {cls.femaleCount}명</div>
+                            
+                            {/* 특이사항 통계 */}
+                            {(() => {
+                              const specialStats = {};
+                              cls.students.forEach(student => {
+                                const notes = studentSpecialNotes[student.id] || [];
+                                const isMaleS = student.gender === '남성' || student.gender === '남' || student.gender === 'M';
+                                notes.forEach(note => {
+                                  if (!specialStats[note]) specialStats[note] = { male: 0, female: 0 };
+                                  if (isMaleS) specialStats[note].male++;
+                                  else specialStats[note].female++;
+                                });
+                              });
+                              const noteOrder = ['한부모', '군자녀', '유치원', '도움반', '쌍생아', '다문화'];
+                              const orderedStats = noteOrder.filter(note => specialStats[note]).map(note => [note, specialStats[note]]);
+                              if (orderedStats.length === 0) return null;
+                              return (
+                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.3)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                  {orderedStats.map(([note, counts]) => {
+                                    const parts = [];
+                                    if (counts.male > 0) parts.push(`남성 ${counts.male}명`);
+                                    if (counts.female > 0) parts.push(`여성 ${counts.female}명`);
+                                    return (
+                                      <div key={note} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span style={{
+                                          background: 'linear-gradient(135deg, #ff9a56 0%, #ff6b6b 100%)',
+                                          color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px',
+                                          fontSize: '0.75rem', fontWeight: '600', whiteSpace: 'nowrap'
+                                        }}>{note}</span>
+                                        <span style={{ color: '#333', fontWeight: '500' }}>{parts.join(', ')}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+
+                            {/* 한글해득 평균 */}
+                            {(() => {
+                              const avg = cls.students.length > 0 
+                                ? (cls.students.reduce((sum, s) => sum + (s.hangulScore || 0), 0) / cls.students.length).toFixed(1) 
+                                : 0;
+                              return (
+                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
+                                  <span style={{
+                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                    color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px',
+                                    fontSize: '0.75rem', fontWeight: '600'
+                                  }}>한글해득 평균</span>
+                                  <span style={{ marginLeft: '0.4rem', color: '#333', fontWeight: '500' }}>{avg}점</span>
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          {/* 학생 리스트 */}
+                          <div style={{ background: 'white', borderRadius: '12px', padding: '1rem' }}>
+                            {cls.students.map((student, sIdx) => {
+                              const isSelected = selectedStudentsForSwap.some(
+                                s => s.id === student.id && s.className === cls.name
+                              );
+                              const isOnlySelected = isSelected && selectedStudentsForSwap.length === 1;
+                              return (
+                                <div key={student.id} style={{
+                                  borderBottom: sIdx < cls.students.length - 1 ? '1px solid #e0e0e0' : 'none',
+                                  borderRadius: '8px',
+                                  background: isSelected ? '#fff8e1' : 'transparent',
+                                  border: isSelected ? '2px solid #ffc107' : '2px solid transparent',
+                                  transition: 'all 0.2s',
+                                  overflow: 'hidden',
+                                }}>
+                                  {/* 학생 행 */}
+                                  <div
+                                    onClick={() => handleStudentClickForSwap(student, cls.name)}
+                                    style={{
+                                      padding: '0.75rem',
+                                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                      cursor: isResultEditMode ? 'pointer' : 'default',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (isResultEditMode && !isSelected) {
+                                        e.currentTarget.parentElement.style.background = '#f0f7ff';
+                                        e.currentTarget.parentElement.style.border = '2px solid #667eea';
+                                        const hint = e.currentTarget.querySelector('.click-hint');
+                                        if (hint) hint.style.display = 'inline-block';
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (isResultEditMode && !isSelected) {
+                                        e.currentTarget.parentElement.style.background = 'transparent';
+                                        e.currentTarget.parentElement.style.border = '2px solid transparent';
+                                        const hint = e.currentTarget.querySelector('.click-hint');
+                                        if (hint) hint.style.display = 'none';
+                                      }
+                                    }}
+                                  >
+                                    <span style={{ fontWeight: isSelected ? '700' : '500', color: '#333', display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, flexWrap: 'nowrap', overflow: 'hidden', minWidth: 0 }}>
+                                      {isSelected && (
+                                        <span style={{
+                                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                          width: '18px', height: '18px', background: '#ffc107',
+                                          borderRadius: '50%', fontSize: '0.7rem', fontWeight: '700', color: '#fff', flexShrink: 0
+                                        }}>✓</span>
+                                      )}
+                                      <span style={{ fontSize: '0.75rem', padding: '0.1rem 0.35rem', background: '#e0e0e0', color: '#555', borderRadius: '4px', fontWeight: '600', flexShrink: 0 }}>{cls.name}반</span>
+                                      <span style={{ fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>{student.name}</span>
+                                      <span style={{
+                                        padding: '0.15rem 0.4rem', borderRadius: '6px', flexShrink: 0,
+                                        background: student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '#e3f2fd' : '#fce4ec',
+                                        color: student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '#1976d2' : '#c2185b',
+                                        fontSize: '0.72rem', fontWeight: '600'
+                                      }}>
+                                        {student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '남성' : '여성'}
+                                      </span>
+                                      {studentSpecialNotes[student.id]?.length > 0 && (
+                                        <span style={{
+                                          fontSize: '0.65rem', padding: '0.12rem 0.35rem', flexShrink: 0,
+                                          background: '#e67e22', color: 'white', borderRadius: '4px', fontWeight: '600',
+                                          whiteSpace: 'nowrap'
+                                        }}>
+                                          {[...studentSpecialNotes[student.id]].sort((a, b) => specialNoteOptions.indexOf(a) - specialNoteOptions.indexOf(b)).join(', ')}
+                                        </span>
+                                      )}
+                                      {duplicateNames[student.id] && (() => {
+                                        const badge = duplicateNames[student.id];
+                                        if (badge === '이름만같음') {
+                                          const myGiven = student.name.slice(1);
+                                          const sameClassSameGiven = cls.students.some(
+                                            s => s.id !== student.id && s.name.slice(1) === myGiven && s.name !== student.name
+                                          );
+                                          if (!sameClassSameGiven) return null;
+                                        }
+                                        return (
+                                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem', flexShrink: 0 }}>
+                                            <span style={{
+                                              fontSize: '0.6rem', padding: '0.1rem 0.28rem',
+                                              background: badge === '동명이인' ? '#ff6b6b' : '#9b59b6',
+                                              color: 'white', borderRadius: '3px', fontWeight: '600', whiteSpace: 'nowrap'
+                                            }}>{badge}</span>
+                                            {badge === '동명이인' && student.birthDate && (
+                                              <span style={{
+                                                fontSize: '0.55rem', padding: '0.1rem 0.25rem',
+                                                background: '#fff0f0', color: '#c0392b',
+                                                borderRadius: '3px', fontWeight: '600', border: '1px solid #ffb3b3', whiteSpace: 'nowrap'
+                                              }}>{student.birthDate}</span>
+                                            )}
+                                          </span>
+                                        );
+                                      })()}
+                                      {isResultEditMode && !isSelected && (
+                                        <span className="click-hint" style={{
+                                          fontSize: '0.65rem', padding: '0.15rem 0.4rem', background: '#667eea',
+                                          color: 'white', borderRadius: '4px', fontWeight: '600',
+                                          marginLeft: 'auto', display: 'none', flexShrink: 0, whiteSpace: 'nowrap'
+                                        }}>👆 클릭: 이동/교체</span>
+                                      )}
+                                    </span>
+                                    {student.hangulScore > 0 && (
+                                      <span style={{
+                                        fontSize: '0.75rem', fontWeight: '700', color: '#764ba2',
+                                        background: '#f3eeff', padding: '0.15rem 0.45rem',
+                                        borderRadius: '6px', flexShrink: 0, marginLeft: '0.25rem', whiteSpace: 'nowrap'
+                                      }}>{student.hangulScore}</span>
+                                    )}
+                                  </div>
+
+                                  {/* 인라인 이동 버튼 (1명 선택 시) */}
+                                  {isOnlySelected && (
+                                    <div style={{
+                                      padding: '0.5rem 0.75rem 0.75rem',
+                                      display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center',
+                                      background: 'rgba(255,193,7,0.08)',
+                                      borderTop: '1px dashed #ffc107'
+                                    }}>
+                                      {results.filter(c => c.name !== cls.name).map(targetCls => (
+                                        <button key={targetCls.name}
+                                          onClick={(e) => { e.stopPropagation(); moveStudentToClass(selectedStudentsForSwap[0], targetCls.name); }}
+                                          style={{
+                                            padding: '0.35rem 0.9rem',
+                                            background: 'white', color: '#667eea',
+                                            border: '2px solid #667eea', borderRadius: '20px',
+                                            fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer',
+                                            transition: 'all 0.15s'
+                                          }}
+                                          onMouseEnter={(e) => {
+                                            e.target.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                                            e.target.style.color = 'white';
+                                          }}
+                                          onMouseLeave={(e) => {
+                                            e.target.style.background = 'white';
+                                            e.target.style.color = '#667eea';
+                                          }}
+                                        >{targetCls.name}반으로 이동</button>
+                                      ))}
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setSelectedStudentsForSwap([]); }}
+                                        style={{
+                                          padding: '0.35rem 0.9rem',
+                                          background: 'white', color: '#999',
+                                          border: '1px solid #ddd', borderRadius: '20px',
+                                          fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer'
+                                        }}
+                                      >취소</button>
+                                      <span style={{ fontSize: '0.75rem', color: '#888', marginLeft: '0.25rem' }}>
+                                        🔄 다른 반 학생 클릭 시 맞교환
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 결과 저장/수정 버튼 */}
+                    <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+                      {isResultEditMode && (
+                        <div style={{
+                          marginBottom: '1rem', padding: '1rem',
+                          background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                          borderRadius: '12px', fontSize: '0.95rem', color: '#1565c0',
+                          fontWeight: '600', display: 'inline-block'
+                        }}>
+                          💡 학생을 클릭하여 이동 또는 맞교환할 수 있습니다
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {isResultSaved && (
+                          <button onClick={toggleResultEdit}
+                            style={{
+                              padding: '1rem 2.5rem',
+                              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                              color: 'white', border: 'none', borderRadius: '12px', fontSize: '1.1rem',
+                              fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 20px rgba(240, 147, 251, 0.4)'
+                            }}
+                            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                          >결과 수정하기</button>
+                        )}
+                        {!isResultSaved && (
+                          <button onClick={toggleResultSave}
+                            style={{
+                              padding: '1rem 2.5rem',
+                              background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                              color: 'white', border: 'none', borderRadius: '12px', fontSize: '1.1rem',
+                              fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 20px rgba(17, 153, 142, 0.4)'
+                            }}
+                            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                          >반편성 결과 저장하기</button>
+                        )}
+                      </div>
+
+                      {isResultEditMode && selectedStudentsForSwap.length === 2 && ReactDOM.createPortal(
+                        (() => {
+                          const [s1, s2] = [...selectedStudentsForSwap].sort((a, b) => a.className.localeCompare(b.className, 'ko'));
+                          const sameClass = s1.className === s2.className;
+                          return (
+                            <div
+                              onClick={() => setSelectedStudentsForSwap([])}
+                              style={{
+                                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                                background: 'rgba(0,0,0,0.45)', zIndex: 9999,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: '1rem'
+                              }}
+                            >
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  background: 'white', borderRadius: '20px',
+                                  padding: '2rem 2.5rem', textAlign: 'center',
+                                  boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+                                  maxWidth: '420px', width: '100%',
+                                  animation: 'fadeInScale 0.18s ease'
+                                }}
+                              >
+                                {/* 학생 정보 */}
+                                <div style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  gap: '1rem', margin: '0 0 1.2rem',
+                                  background: '#f8f9fa', borderRadius: '12px', padding: '1.2rem 1.5rem',
+                                  flexWrap: 'nowrap', overflow: 'hidden'
+                                }}>
+                                  <div style={{ textAlign: 'center' }}>
+                                    <div style={{
+                                      display: 'inline-block', padding: '0.3rem 0.8rem',
+                                      background: '#667eea', color: 'white',
+                                      borderRadius: '8px', fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.4rem'
+                                    }}>{s1.className}반</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', whiteSpace: 'nowrap' }}>
+                                      <span style={{ fontSize: '1.55rem', fontWeight: '800', color: '#222', whiteSpace: 'nowrap' }}>{s1.name}</span>
+                                      <span style={{
+                                        padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0,
+                                        background: (s1.gender === '남성' || s1.gender === '남' || s1.gender === 'M') ? '#e3f2fd' : '#fce4ec',
+                                        color: (s1.gender === '남성' || s1.gender === '남' || s1.gender === 'M') ? '#1976d2' : '#c2185b'
+                                      }}>{(s1.gender === '남성' || s1.gender === '남' || s1.gender === 'M') ? '남성' : '여성'}</span>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: '1.8rem', color: '#667eea', fontWeight: '900', flexShrink: 0 }}>↔</div>
+                                  <div style={{ textAlign: 'center' }}>
+                                    <div style={{
+                                      display: 'inline-block', padding: '0.3rem 0.8rem',
+                                      background: '#f093fb', color: 'white',
+                                      borderRadius: '8px', fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.4rem'
+                                    }}>{s2.className}반</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center', whiteSpace: 'nowrap' }}>
+                                      <span style={{ fontSize: '1.55rem', fontWeight: '800', color: '#222', whiteSpace: 'nowrap' }}>{s2.name}</span>
+                                      <span style={{
+                                        padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0,
+                                        background: (s2.gender === '남성' || s2.gender === '남' || s2.gender === 'M') ? '#e3f2fd' : '#fce4ec',
+                                        color: (s2.gender === '남성' || s2.gender === '남' || s2.gender === 'M') ? '#1976d2' : '#c2185b'
+                                      }}>{(s2.gender === '남성' || s2.gender === '남' || s2.gender === 'M') ? '남성' : '여성'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* 메시지 */}
+                                {sameClass ? (
+                                  <div style={{
+                                    fontSize: '0.9rem', color: '#e53935', fontWeight: '600',
+                                    padding: '0.5rem 0.8rem', background: '#fff5f5',
+                                    borderRadius: '8px', marginBottom: '1rem'
+                                  }}>
+                                    같은 반의 학생은 맞교환할 수 없습니다.
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize: '0.88rem', color: '#888', marginBottom: '1rem' }}>
+                                    두 학생의 반을 서로 바꿉니다.
+                                  </div>
+                                )}
+
+                                {/* 버튼 */}
+                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                                  {!sameClass && (
+                                    <button
+                                      onClick={() => swapStudents(s1, s2)}
+                                      style={{
+                                        padding: '0.45rem 1.4rem',
+                                        background: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
+                                        color: 'white', border: 'none', borderRadius: '8px',
+                                        fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer',
+                                        boxShadow: '0 3px 8px rgba(44,62,80,0.3)', transition: 'transform 0.15s'
+                                      }}
+                                      onMouseEnter={(e) => e.target.style.transform = 'scale(1.04)'}
+                                      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                    >확인</button>
+                                  )}
+                                  <button
+                                    onClick={() => setSelectedStudentsForSwap([])}
+                                    style={{
+                                      padding: '0.45rem 1.4rem',
+                                      background: '#f1f3f5', color: '#555',
+                                      border: 'none', borderRadius: '8px',
+                                      fontSize: '0.9rem', fontWeight: '700', cursor: 'pointer',
+                                      transition: 'transform 0.15s'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.04)'}
+                                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                  >취소</button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })(),
+                        document.body
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 특이사항 선택 모달 */}
+            {activeSpecialNoteDropdown !== null && (() => {
+              const targetStudent = students.find(s => s.id === activeSpecialNoteDropdown);
+              if (!targetStudent) return null;
+              return ReactDOM.createPortal(
+                <div
+                  style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    zIndex: 9998, background: 'rgba(0,0,0,0.35)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                  onClick={() => setActiveSpecialNoteDropdown(null)}
+                >
+                  <div
+                    style={{
+                      background: 'white', borderRadius: '16px',
+                      boxShadow: '0 20px 60px rgba(0,0,0,0.3)', padding: '1.25rem',
+                      minWidth: '260px', maxWidth: '320px', width: '85vw',
+                      border: '3px solid #e67e22'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div style={{
+                      fontSize: '0.95rem', fontWeight: '700', color: '#e67e22',
+                      marginBottom: '0.5rem', textAlign: 'center',
+                      borderBottom: '2px solid #e67e22', paddingBottom: '0.5rem'
+                    }}>📋 {targetStudent.name} — 특이사항 선택</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      {specialNoteOptions.map((note) => {
+                        const isNoteSelected = studentSpecialNotes[targetStudent.id]?.includes(note);
+                        return (
+                          <div key={note}
+                            onClick={() => toggleSpecialNote(targetStudent.id, note)}
+                            style={{
+                              padding: '0.75rem 1rem',
+                              background: isNoteSelected ? '#e67e22' : '#f8f8f8',
+                              color: isNoteSelected ? 'white' : '#333', borderRadius: '10px',
+                              cursor: 'pointer',
+                              fontWeight: isNoteSelected ? '700' : '600', fontSize: '1rem',
+                              transition: 'all 0.15s', display: 'flex', alignItems: 'center',
+                              gap: '0.7rem', userSelect: 'none',
+                              border: isNoteSelected ? '2px solid #d35400' : '2px solid #eee'
+                            }}
+                          >
+                            <span style={{
+                              width: '26px', height: '26px', display: 'flex',
+                              alignItems: 'center', justifyContent: 'center', fontWeight: '900',
+                              fontSize: '1.2rem', flexShrink: 0,
+                              background: isNoteSelected ? 'rgba(255,255,255,0.3)' : '#ddd',
+                              borderRadius: '6px', color: isNoteSelected ? 'white' : '#aaa'
+                            }}>{isNoteSelected ? '✓' : ''}</span>
+                            <span style={{ flex: 1 }}>{note}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setActiveSpecialNoteDropdown(null)}
+                      style={{
+                        width: '100%', marginTop: '0.8rem', padding: '0.75rem',
+                        background: 'linear-gradient(135deg, #e67e22 0%, #d35400 100%)',
+                        color: 'white', border: 'none', borderRadius: '10px',
+                        fontWeight: '700', fontSize: '1rem', cursor: 'pointer'
+                      }}
+                    >완료</button>
+                  </div>
+                </div>,
+                document.body
+              );
+            })()}
+
+            {/* 학급 수 선택 모달 */}
+            {showClassModal && (
+              <div style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0, 0, 0, 0.6)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem'
+              }} onClick={() => setShowClassModal(false)}>
+                <div onClick={(e) => e.stopPropagation()} style={{
+                  background: 'white', borderRadius: '20px', padding: '2rem',
+                  maxWidth: '500px', width: '100%', boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)'
+                }}>
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '2px solid #e0e0e0'
+                  }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#333', margin: 0 }}>학급 수 선택</h3>
+                    <button onClick={() => setShowClassModal(false)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', color: '#999' }}>
+                      <X />
+                    </button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                      <button key={num} onClick={() => selectNumClasses(num)}
+                        style={{
+                          padding: '1.5rem 1rem',
+                          background: numClasses === num ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' : '#f5f5f5',
+                          color: numClasses === num ? 'white' : '#333',
+                          border: 'none', borderRadius: '12px', cursor: 'pointer',
+                          fontWeight: '700', fontSize: '1.5rem',
+                          boxShadow: numClasses === num ? '0 4px 12px rgba(79, 172, 254, 0.4)' : 'none'
+                        }}>
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 개인정보 보호 푸터 */}
+            <div className="privacy-footer" style={{
+              marginTop: '3rem', padding: '1.5rem', background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '12px', textAlign: 'center', border: '1px solid rgba(255, 255, 255, 0.2)'
+            }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔐</div>
+              <div style={{ color: 'white', fontSize: '0.9rem', lineHeight: '1.6', maxWidth: '800px', margin: '0 auto' }}>
+                <strong>개인정보 보호 안내</strong><br/>
+                이 프로그램은 100% 로컬 전용입니다. 모든 데이터는 귀하의 브라우저 메모리에만 저장되며,<br/>
+                서버나 외부로 전송되지 않습니다. 페이지를 새로고침하면 모든 데이터가 삭제됩니다.<br/>
+                <span style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                  결과를 보관하려면 반드시 엑셀 다운로드 기능을 사용하세요.
+                </span>
+                <br/><br/>
+                <span style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                  * 최종적인 반편성 권한과 책임은 사용하신 선생님께 있습니다.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<ClassAssignment />, document.getElementById('root'));
+  </script>
+</body>
+</html>
