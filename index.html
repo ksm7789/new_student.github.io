@@ -189,7 +189,9 @@
       const [isEditMode, setIsEditMode] = useState(true);
       const [selectedStudentsForSwap, setSelectedStudentsForSwap] = useState([]);
       const [isResultSaved, setIsResultSaved] = useState(false);
+      const [saveIndicator, setSaveIndicator] = useState(''); // '', 'saving', 'saved'
       const [isResultEditMode, setIsResultEditMode] = useState(false);
+      const isLoadingData = React.useRef(false);
       const [nameSortOrder, setNameSortOrder] = useState(null);
       const [genderSortOrder, setGenderSortOrder] = useState(null);
       const [password, setPassword] = useState('');
@@ -291,11 +293,11 @@
         const trimmedInput = inputPassword.trim();
         const trimmedPassword = password.trim();
         if (trimmedInput === trimmedPassword) {
-          setIsUnlocked(true);
           setPasswordAttempts(0);
           try {
             const savedData = localStorage.getItem('freshman_assignment_data');
             if (savedData) {
+              isLoadingData.current = true;
               const data = JSON.parse(savedData);
               setStudents(data.students || []);
               setNumClasses(data.numClasses || 3);
@@ -304,10 +306,25 @@
               setResults(data.results || null);
               setIsInputComplete(data.isInputComplete || false);
               setIsEditMode(data.isEditMode !== undefined ? data.isEditMode : true);
+              const resIsSaved = data.isResultSaved || false;
+              setIsResultSaved(resIsSaved);
+              // 결과 있고 isResultEditMode 저장 안 된 구버전 데이터면 → 편집모드로 복원
+              const resEditMode = data.isResultEditMode !== undefined
+                ? data.isResultEditMode
+                : (!!data.results && !resIsSaved);
+              setIsResultEditMode(resEditMode);
             }
           } catch (error) {
             console.error('데이터 로드 오류:', error);
+            isLoadingData.current = false;
           }
+          // 로드 완료 후 unlock - requestAnimationFrame으로 React 렌더 완료 후 실행 보장
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              isLoadingData.current = false;
+              setIsUnlocked(true);
+            });
+          });
         } else {
           const newAttempts = passwordAttempts + 1;
           setPasswordAttempts(newAttempts);
@@ -336,15 +353,24 @@
       };
 
       // 자동 저장
+      const saveTimerRef = React.useRef(null);
       React.useEffect(() => {
-        if (isUnlocked && isPasswordSet) {
+        if (isUnlocked && isPasswordSet && !isLoadingData.current) {
           const dataToSave = {
             students, numClasses, studentSpecialNotes, separatePairs,
-            results, isInputComplete, isEditMode
+            results, isInputComplete, isEditMode,
+            isResultSaved, isResultEditMode
           };
-          localStorage.setItem('freshman_assignment_data', JSON.stringify(dataToSave));
+          try {
+            localStorage.setItem('freshman_assignment_data', JSON.stringify(dataToSave));
+            setSaveIndicator('saved');
+            if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+            saveTimerRef.current = setTimeout(() => setSaveIndicator(''), 2000);
+          } catch (e) {
+            console.error('저장 오류:', e);
+          }
         }
-      }, [students, numClasses, studentSpecialNotes, separatePairs, results, isInputComplete, isEditMode, isUnlocked, isPasswordSet]);
+      }, [students, numClasses, studentSpecialNotes, separatePairs, results, isInputComplete, isEditMode, isResultSaved, isResultEditMode, isUnlocked, isPasswordSet]);
 
       const resetAll = () => {
         if (confirm('모든 데이터와 비밀번호를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
@@ -984,6 +1010,16 @@
                 <p className="subtitle" style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '1rem', marginTop: '0.5rem', position: 'relative' }}>
                   한글해득 점수와 학생 특성을 고려한 균형잡힌 반편성
                 </p>
+                {isUnlocked && saveIndicator === 'saved' && (
+                  <div style={{
+                    position: 'relative', marginTop: '0.5rem',
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                    background: 'rgba(255,255,255,0.2)', borderRadius: '20px',
+                    padding: '0.25rem 0.75rem', fontSize: '0.8rem', color: 'white', fontWeight: '600'
+                  }}>
+                    ✅ 자동 저장됨
+                  </div>
+                )}
                 {isUnlocked && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1.5rem', position: 'relative' }}>
                     <button onClick={resetAll} style={{
