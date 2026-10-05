@@ -201,6 +201,9 @@
       const [passwordAttempts, setPasswordAttempts] = useState(0);
 
       const specialNoteOptions = ['한부모', '군자녀', '유치원', '도움반', '쌍생아', '다문화'];
+      const literacyLevels = ['완전해득', '초보적수준해득', '미해득'];
+      const literacyToScore = { '완전해득': 3, '초보적수준해득': 2, '미해득': 1 };
+      const scoreToLiteracy = { 3: '완전해득', 2: '초보적수준해득', 1: '미해득', 0: '' };
 
       // 동명이인 + 이름만같음 탐지 (결과가 있으면 결과 기준, 없으면 원본 기준)
       const findDuplicateNames = () => {
@@ -400,11 +403,16 @@
             if (gender === '남' || gender === 'M') gender = '남성';
             else if (gender === '여' || gender === 'F') gender = '여성';
 
-            // 한글해득 점수 파싱
+            // 한글해득 점수 파싱 (텍스트 → 점수 변환)
             let hangulScore = 0;
             const rawScore = row['한글해득'] || row['한글해득점수'] || row['한글해득 점수'] || '';
             if (rawScore !== '' && rawScore !== null && rawScore !== undefined) {
-              hangulScore = parseInt(rawScore) || 0;
+              const trimmed = String(rawScore).trim();
+              if (literacyToScore[trimmed] !== undefined) {
+                hangulScore = literacyToScore[trimmed];
+              } else {
+                hangulScore = parseInt(rawScore) || 0;
+              }
             }
 
             // 특이사항 파싱 (엑셀에서 읽어오기)
@@ -476,15 +484,25 @@
       };
 
       const downloadTemplate = () => {
-        const templateData = [
-          { '학생개인번호': '', '이름': '홍길동', '성별': '남성', '생년월일': '2017-03-15', '한글해득': '', '특이사항': '' },
-          { '학생개인번호': '', '이름': '김영희', '성별': '여성', '생년월일': '2017-05-20', '한글해득': '', '특이사항': '' },
-          { '학생개인번호': '', '이름': '이철수', '성별': '남성', '생년월일': '2017-08-10', '한글해득': '', '특이사항': '' },
-        ];
-        const worksheet = XLSX.utils.json_to_sheet(templateData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, '학생명렬표');
-        XLSX.writeFile(workbook, '학생명렬표_양식.xlsx');
+        // 드롭다운 유효성 검사가 포함된 Excel 양식 (xlsxwriter로 생성)
+        const base64 = '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';
+
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '학생명렬표_양식.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       };
 
       const selectNumClasses = (num) => {
@@ -884,7 +902,7 @@
               '이름': student.name,
               '성별': student.gender,
               '생년월일': student.birthDate || '',
-              '한글해득': student.hangulScore || 0,
+              '한글해득': scoreToLiteracy[student.hangulScore] || '',
               '특이사항': studentSpecialNotes[student.id]?.length > 0 ? [...studentSpecialNotes[student.id]].sort((a, b) => specialNoteOptions.indexOf(a) - specialNoteOptions.indexOf(b)).join(', ') : (student.specialNote || ''),
               '배정반': cls.name + '반'
             });
@@ -901,7 +919,7 @@
             '이름': student.name,
             '성별': student.gender,
             '생년월일': student.birthDate || '',
-            '한글해득': student.hangulScore || 0,
+            '한글해득': scoreToLiteracy[student.hangulScore] || '',
             '특이사항': studentSpecialNotes[student.id]?.length > 0 ? [...studentSpecialNotes[student.id]].sort((a, b) => specialNoteOptions.indexOf(a) - specialNoteOptions.indexOf(b)).join(', ') : (student.specialNote || '')
           }));
           const classSheet = XLSX.utils.json_to_sheet(classData);
@@ -1219,15 +1237,76 @@
                                   {student.gender === '남성' || student.gender === '남' || student.gender === 'M' ? '남성' : '여성'}
                                 </span>
                               </td>
-                              <td style={{ padding: '0.75rem 0.5rem', textAlign: 'center', fontWeight: '600', fontSize: '0.9rem' }}>
-                                <span style={{
-                                  display: 'inline-block', minWidth: '36px', padding: '0.3rem 0.6rem',
-                                  background: student.hangulScore > 0 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f0f0f0',
-                                  color: student.hangulScore > 0 ? 'white' : '#999',
-                                  borderRadius: '8px', fontWeight: '700'
-                                }}>
-                                  {student.hangulScore || 0}
-                                </span>
+                              <td style={{ padding: '0.5rem 0.25rem', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', flexDirection: 'row', gap: '14px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                  {literacyLevels.map(level => {
+                                    const levelScore = literacyToScore[level];
+                                    const isSelected = student.hangulScore === levelScore;
+                                    const colors = {
+                                      '완전해득': '#27ae60',
+                                      '초보적수준해득': '#f39c12',
+                                      '미해득': '#e74c3c'
+                                    };
+                                    const color = colors[level];
+                                    return (
+                                      <label
+                                        key={level}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!isEditMode) {
+                                            e.preventDefault();
+                                            alert('입력 수정 버튼을 클릭하여 수정 모드로 전환해주세요.');
+                                            return;
+                                          }
+                                          const newStudents = students.map(s =>
+                                            s.id === student.id
+                                              ? { ...s, hangulScore: s.hangulScore === levelScore ? 0 : levelScore }
+                                              : s
+                                          );
+                                          setStudents(newStudents);
+                                        }}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '6px',
+                                          cursor: isEditMode ? 'pointer' : 'not-allowed',
+                                          userSelect: 'none',
+                                          whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        <span style={{
+                                          width: '18px',
+                                          height: '18px',
+                                          borderRadius: '50%',
+                                          border: `2px solid ${isSelected ? color : '#bbb'}`,
+                                          background: '#fff',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                          boxSizing: 'border-box',
+                                          transition: 'all 0.15s'
+                                        }}>
+                                          {isSelected && (
+                                            <span style={{
+                                              width: '10px',
+                                              height: '10px',
+                                              borderRadius: '50%',
+                                              background: color
+                                            }} />
+                                          )}
+                                        </span>
+                                        <span style={{
+                                          fontSize: '0.78rem',
+                                          fontWeight: isSelected ? '700' : '500',
+                                          color: isSelected ? color : '#777'
+                                        }}>
+                                          {level}
+                                        </span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
                               </td>
                               <td style={{ padding: '0.5rem 0.25rem', textAlign: 'center', position: 'relative' }}>
                                 <div
@@ -1448,19 +1527,17 @@
                               );
                             })()}
 
-                            {/* 한글해득 평균 */}
+                            {/* 한글해득 분포 */}
                             {(() => {
-                              const avg = cls.students.length > 0 
-                                ? (cls.students.reduce((sum, s) => sum + (s.hangulScore || 0), 0) / cls.students.length).toFixed(1) 
-                                : 0;
+                              const counts = { 3: 0, 2: 0, 1: 0, 0: 0 };
+                              cls.students.forEach(s => { counts[s.hangulScore || 0]++; });
                               return (
-                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
-                                  <span style={{
-                                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                    color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px',
-                                    fontSize: '0.75rem', fontWeight: '600'
-                                  }}>한글해득 평균</span>
-                                  <span style={{ marginLeft: '0.4rem', color: '#333', fontWeight: '500' }}>{avg}점</span>
+                                <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.3)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: '600', color: '#555', whiteSpace: 'nowrap' }}>📖 한글해득</span>
+                                  {counts[3] > 0 && <span style={{ background: '#27ae60', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '600' }}>완전 {counts[3]}</span>}
+                                  {counts[2] > 0 && <span style={{ background: '#f39c12', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '600' }}>초보 {counts[2]}</span>}
+                                  {counts[1] > 0 && <span style={{ background: '#e74c3c', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '600' }}>미해득 {counts[1]}</span>}
+                                  {counts[0] > 0 && <span style={{ background: '#bbb', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '600' }}>미입력 {counts[0]}</span>}
                                 </div>
                               );
                             })()}
@@ -1568,12 +1645,14 @@
                                         }}>👆 클릭: 이동/교체</span>
                                       )}
                                     </span>
-                                    {student.hangulScore > 0 && (
+                                    {student.hangulScore > 0 && scoreToLiteracy[student.hangulScore] && (
                                       <span style={{
-                                        fontSize: '0.75rem', fontWeight: '700', color: '#764ba2',
-                                        background: '#f3eeff', padding: '0.15rem 0.45rem',
+                                        fontSize: '0.65rem', fontWeight: '700',
+                                        color: 'white',
+                                        background: student.hangulScore === 3 ? '#27ae60' : student.hangulScore === 2 ? '#f39c12' : '#e74c3c',
+                                        padding: '0.15rem 0.45rem',
                                         borderRadius: '6px', flexShrink: 0, marginLeft: '0.25rem', whiteSpace: 'nowrap'
-                                      }}>{student.hangulScore}</span>
+                                      }}>{scoreToLiteracy[student.hangulScore]}</span>
                                     )}
                                   </div>
 
